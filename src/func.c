@@ -1499,6 +1499,49 @@ static void sha512Func(sqlite3_context *context, int argc, sqlite3_value **argv)
   sqlite3_result_blob(context, digest, SHA512_DIGEST_SIZE, sqlite3_free);
 }
 
+typedef struct TableHashCtx TableHashCtx;
+struct TableHashCtx {
+  unsigned char run[SHA256_DIGEST_SIZE];
+};
+
+static void tableHashStep(sqlite3_context *context, int argc, sqlite3_value **argv){
+  TableHashCtx *thc;
+  // assume zeroed on fetch
+  thc = sqlite3_aggregate_context(context, sizeof(*thc));
+
+  if (thc) {
+    unsigned char * cur_blob = sqlite3_value_blob(argv[0]);
+    int cur_blob_len = sqlite3_value_bytes(argv[0]);
+    unsigned char cur_blob_digest[SHA256_DIGEST_SIZE];
+    if (cur_blob && (cur_blob_len >= 0)) {
+      sha256(cur_blob, cur_blob_len, cur_blob_digest);
+      sha256_ctx next_ctx;
+      sha256_init(&next_ctx);
+      sha256_update(&next_ctx, cur_blob_digest, SHA256_DIGEST_SIZE);
+      sha256_update(&next_ctx, thc->run, SHA256_DIGEST_SIZE);
+      sha256_final(&next_ctx, thc->run);
+    }
+  }
+}
+
+static void tableHashFinalize(sqlite3_context *context){
+  TableHashCtx *thc;
+  thc = sqlite3_aggregate_context(context, sizeof(*thc));
+  if (thc) {
+    sqlite3_result_blob(context, thc->run, SHA256_DIGEST_SIZE, SQLITE_TRANSIENT);
+  } else {
+    sqlite3_result_null(context);
+  }
+}
+
+static void tableHashInverse(sqlite3_context *context,
+  int _argc,
+  sqlite3_value **_argv
+){
+  // lolno
+  sqlite3_result_error(context, "table_hash inverse not implemented", -1);
+}
+
 /*
 ** Implementation of the upper() and lower() SQL functions.
 */
@@ -3872,6 +3915,9 @@ void sqlite3RegisterBuiltinFunctions(void){
         groupConcatFinalize, groupConcatValue, groupConcatInverse, 0),
     WAGGREGATE(string_agg,   2, 0, 0, groupConcatStep,
         groupConcatFinalize, groupConcatValue, groupConcatInverse, 0),
+
+    WAGGREGATE(table_hash, 1, 0, 0, tableHashStep,
+      tableHashFinalize, tableHashFinalize, tableHashInverse, 0),
  
     LIKEFUNC(glob, 2, &globInfo, SQLITE_FUNC_LIKE|SQLITE_FUNC_CASE),
 #ifdef SQLITE_CASE_SENSITIVE_LIKE
