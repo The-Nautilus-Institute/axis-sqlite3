@@ -164,7 +164,6 @@ void sha512(const uint8 *message, uint64 len, uint8 *digest);
 
 #define SHFR(x, n)    (x >> n)
 #define ROTR(x, n)   ((x >> n) | (x << ((sizeof (x) << 3) - n)))
-#define ROTL(x, n)   ((x << n) | (x >> ((sizeof (x) << 3) - n)))
 #define CH(x, y, z)  ((x & y) ^ (~x & z))
 #define MAJ(x, y, z) ((x & y) ^ (x & z) ^ (y & z))
 
@@ -1510,7 +1509,7 @@ static void tableHashStep(sqlite3_context *context, int argc, sqlite3_value **ar
   thc = sqlite3_aggregate_context(context, sizeof(*thc));
 
   if (thc) {
-    unsigned char * cur_blob = sqlite3_value_blob(argv[0]);
+    const unsigned char * cur_blob = sqlite3_value_blob(argv[0]);
     int cur_blob_len = sqlite3_value_bytes(argv[0]);
     unsigned char cur_blob_digest[SHA256_DIGEST_SIZE];
     if (cur_blob && (cur_blob_len >= 0)) {
