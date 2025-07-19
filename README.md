@@ -1,3 +1,17 @@
+# important note
+
+This version of sqlite has been modified for
+DEF CON CTF usage.
+It may have security weaknesses added and
+will not be maintained in the future.
+
+If you're using sqlite in production, please use the upstream version.
+
+**This sqlite version is not suitable for production use.**
+This sqlite version is intended only for education and research purposes.
+
+<3 [vito@nautilus.institute](mailto:vito@nautilus.institute)
+
 <h1 align="center">SQLite Source Repository</h1>
 
 This repository contains the complete source code for the
